@@ -45,11 +45,20 @@ RUN sed -i 's/memory_limit = .*/memory_limit = 512M/' /etc/php/*/apache2/php.ini
     sed -i 's/max_execution_time = .*/max_execution_time = 300/' /etc/php/*/apache2/php.ini && \
     sed -i 's/max_input_time = .*/max_input_time = 300/' /etc/php/*/apache2/php.ini
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
+# Enable Apache modules and fix ServerName warning
+RUN a2enmod rewrite headers && \
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Fix ServerName warning globally
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+# Create placeholder vhost (entrypoint.sh overwrites this at runtime with correct PORT)
+RUN printf '<VirtualHost *:8080>\n\
+    DocumentRoot /var/www/resourcespace\n\
+    <Directory /var/www/resourcespace>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>\n\
+</VirtualHost>\n' > /etc/apache2/sites-available/resourcespace.conf && \
+    a2dissite 000-default.conf && \
+    a2ensite resourcespace.conf
 
 # Checkout ResourceSpace via SVN (latest stable release)
 RUN svn co https://svn.resourcespace.com/svn/rs/releases/10.7 /var/www/resourcespace
@@ -58,26 +67,21 @@ RUN svn co https://svn.resourcespace.com/svn/rs/releases/10.7 /var/www/resources
 RUN chown -R www-data:www-data /var/www/resourcespace && \
     chmod -R 755 /var/www/resourcespace
 
-# Create filestore and include directories
+# Create filestore directory
 RUN mkdir -p /var/www/resourcespace/filestore && \
     chown -R www-data:www-data /var/www/resourcespace/filestore
 
-# Copy custom config and entrypoint
+# Copy config and entrypoint
 COPY config.php /var/www/resourcespace/include/config.php
 COPY config.php /config.php.bak
 COPY entrypoint.sh /entrypoint.sh
-COPY apache-resourcespace.conf /etc/apache2/sites-available/resourcespace.conf
 COPY cronjob /etc/cron.d/resourcespace
 
-# Set up Apache virtual host
-RUN a2dissite 000-default.conf && \
-    a2ensite resourcespace.conf
-
-# Ensure Apache log pipes are accessible
+# Ensure Apache log pipes work in container
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/2 /var/log/apache2/error.log
 
-# Set permissions on entrypoint
+# Set permissions
 RUN chmod +x /entrypoint.sh && \
     chmod 0644 /etc/cron.d/resourcespace && \
     chown www-data:www-data /var/www/resourcespace/include/config.php
