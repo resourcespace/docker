@@ -42,8 +42,6 @@ echo "Setting up persistent storage at $VOLUME_ROOT..."
 mkdir -p "$VOLUME_ROOT/filestore"
 mkdir -p "$VOLUME_ROOT/include"
 
-rm -f "$VOLUME_ROOT/include/config.php"
-
 # Seed include directory on first deploy
 if [ ! -f "$VOLUME_ROOT/include/config.php" ]; then
     echo "  First deploy detected — seeding include directory..."
