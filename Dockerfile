@@ -72,8 +72,8 @@ RUN mkdir -p /var/www/resourcespace/filestore && \
     chown -R www-data:www-data /var/www/resourcespace/filestore
 
 # Copy config and entrypoint
-COPY config.php /var/www/resourcespace/include/config.php
-COPY config.php /config.php.bak
+# COPY config.php /var/www/resourcespace/include/config.php
+# COPY config.php /config.php.bak
 COPY entrypoint.sh /entrypoint.sh
 COPY cronjob /etc/cron.d/resourcespace
 
