@@ -81,10 +81,13 @@ COPY cronjob /etc/cron.d/resourcespace
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/2 /var/log/apache2/error.log
 
-# Set permissions
+# # Set permissions
+# RUN chmod +x /entrypoint.sh && \
+#     chmod 0644 /etc/cron.d/resourcespace && \
+#     chown www-data:www-data /var/www/resourcespace/include/config.php
+
 RUN chmod +x /entrypoint.sh && \
-    chmod 0644 /etc/cron.d/resourcespace && \
-    chown www-data:www-data /var/www/resourcespace/include/config.php
+    chmod 0644 /etc/cron.d/resourcespace
 
 # Railway uses PORT env var — default to 8080
 ENV PORT=8080
