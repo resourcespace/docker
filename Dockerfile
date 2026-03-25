@@ -1,9 +1,7 @@
 # ResourceSpace on Railway
 # Based on the official ResourceSpace Docker image
 # Modified for Railway deployment (no docker-compose, env-based config)
-
 FROM ubuntu:24.04
-
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
@@ -71,9 +69,10 @@ RUN chown -R www-data:www-data /var/www/resourcespace && \
 RUN mkdir -p /var/www/resourcespace/filestore && \
     chown -R www-data:www-data /var/www/resourcespace/filestore
 
-# Copy config and entrypoint
-# COPY config.php /var/www/resourcespace/include/config.php
-# COPY config.php /config.php.bak
+# Copy env-var-based config as backup (entrypoint will place it in the volume)
+COPY config.php /config.php.bak
+
+# Copy entrypoint and cron
 COPY entrypoint.sh /entrypoint.sh
 COPY cronjob /etc/cron.d/resourcespace
 
@@ -81,11 +80,7 @@ COPY cronjob /etc/cron.d/resourcespace
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
     ln -sf /proc/self/fd/2 /var/log/apache2/error.log
 
-# # Set permissions
-# RUN chmod +x /entrypoint.sh && \
-#     chmod 0644 /etc/cron.d/resourcespace && \
-#     chown www-data:www-data /var/www/resourcespace/include/config.php
-
+# Set permissions
 RUN chmod +x /entrypoint.sh && \
     chmod 0644 /etc/cron.d/resourcespace
 
@@ -100,6 +95,7 @@ ENV APACHE_LOCK_DIR=/var/lock/apache2
 
 EXPOSE 8080
 
+# Enable PHP error display (remove after setup is stable)
 RUN echo "display_errors = On" > /etc/php/8.3/apache2/conf.d/99-debug.ini && \
     echo "error_reporting = E_ALL" >> /etc/php/8.3/apache2/conf.d/99-debug.ini
 
