@@ -42,25 +42,22 @@ echo "Setting up persistent storage at $VOLUME_ROOT..."
 mkdir -p "$VOLUME_ROOT/filestore"
 mkdir -p "$VOLUME_ROOT/include"
 
-# Seed include directory on first deploy
-# if [ ! -f "$VOLUME_ROOT/include/config.php" ]; then
-#     echo "  First deploy detected — seeding include directory..."
-#     if [ -f /config.php.bak ]; then
-#         cp /config.php.bak "$VOLUME_ROOT/include/config.php"
-#     fi
-#     if [ -d /var/www/resourcespace/include ] && [ ! -L /var/www/resourcespace/include ]; then
-#         cp -rn /var/www/resourcespace/include/* "$VOLUME_ROOT/include/" 2>/dev/null || true
-#     fi
-# fi
-
-# Copy include files to volume (but NOT config.php — let setup wizard create it)
+# Copy include files to volume on first deploy (but NOT config.php)
 if [ ! -d "$VOLUME_ROOT/include/db" ]; then
-    echo "  First deploy — copying include files (no config)..."
+    echo "  First deploy — copying include files..."
     if [ -d /var/www/resourcespace/include ] && [ ! -L /var/www/resourcespace/include ]; then
         cp -rn /var/www/resourcespace/include/* "$VOLUME_ROOT/include/" 2>/dev/null || true
-        rm -f "$VOLUME_ROOT/include/config.php"
     fi
 fi
+
+# Always overwrite config.php with our env-var version from the Docker image.
+# This ensures Railway env vars are used for DB credentials on every deploy,
+# regardless of what the setup wizard may have written previously.
+if [ -f /config.php.bak ]; then
+    cp -f /config.php.bak "$VOLUME_ROOT/include/config.php"
+    echo "  Config: using env-var-based config.php"
+fi
+chown www-data:www-data "$VOLUME_ROOT/include/config.php" 2>/dev/null || true
 
 # Symlink filestore
 if [ ! -L /var/www/resourcespace/filestore ]; then
