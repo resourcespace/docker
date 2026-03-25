@@ -100,4 +100,7 @@ ENV APACHE_LOCK_DIR=/var/lock/apache2
 
 EXPOSE 8080
 
+RUN echo "display_errors = On" > /etc/php/8.3/apache2/conf.d/99-debug.ini && \
+    echo "error_reporting = E_ALL" >> /etc/php/8.3/apache2/conf.d/99-debug.ini
+
 ENTRYPOINT ["/entrypoint.sh"]
