@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "resourcespace.fullname" . }}-filestore-pvc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+  annotations:
+    # Prevents accidental deletion of the PVC on helm uninstall.
+    # Delete manually if you are sure you no longer need the data.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.filestore.size }}
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName | quote }}
+  {{- end }}

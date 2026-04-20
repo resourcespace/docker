@@ -1,0 +1,108 @@
+# =============================================================================
+# ResourceSpace Helm Chart - values.yaml
+# =============================================================================
+# Override any value with: helm install resourcespace . -f my-overrides.yaml
+# or with: --set key=value on the command line.
+
+# -----------------------------------------------------------------------------
+# Global
+# -----------------------------------------------------------------------------
+global:
+  # Kubernetes namespace to deploy into (must already exist, or use
+  # `oc new-project <name>` before installing).
+  namespace: <namespace>
+
+
+# -----------------------------------------------------------------------------
+# ResourceSpace application
+# -----------------------------------------------------------------------------
+resourcespace:
+  image:
+    # Use the official image from Docker Hub, or your internal registry.
+    repository: <repository>
+    tag: <tag>
+    pullPolicy: Always
+
+
+  # Number of ResourceSpace web pods.
+  # NOTE: ResourceSpace writes files to the filestore volume - keep replicas at
+  # 1 unless you have configured shared ReadWriteMany NFS storage and tested
+  # concurrent access carefully.
+  replicaCount: 1
+
+  # The publicly reachable hostname for the OpenShift Route.
+  # CONFIRM: set this to your actual cluster ingress domain.
+  # Example: resourcespace.apps.mycluster.example.com
+  hostname: <hostname>
+
+  # TLS for the OpenShift Route.
+  tls:
+    # edge = OpenShift terminates TLS; insecureEdgeTerminationPolicy redirects HTTP→HTTPS.
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    # Leave secretName empty to use the cluster's default wildcard certificate,
+    # or set it to the name of a TLS Secret in the same namespace.
+    secretName: ""
+
+  # Resource requests/limits for the ResourceSpace pod.
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "250m"
+      memory: "512Mi"
+
+  # Additional environment variables injected into the ResourceSpace pod.
+  extraEnv: []
+
+# -----------------------------------------------------------------------------
+# MariaDB (in-cluster StatefulSet)
+# -----------------------------------------------------------------------------
+mariadb:
+  image:
+    repository: mariadb
+    tag: "11"
+    pullPolicy: IfNotPresent
+
+  # Database credentials.
+  # SECURITY: move these to an external secret manager (Vault, SealedSecrets)
+  # before running in production. The chart creates a Kubernetes Secret from
+  # these values; never commit real passwords to source control.
+  auth:
+    rootPassword: ""  # Required — set with --set mariadb.auth.rootPassword=<value>
+    database: "resourcespace"
+    username: "resourcespace"
+    password: ""  # Required — set with --set mariadb.auth.password=<value>
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "250m"
+      memory: "512Mi"
+
+  # Persistent volume for MariaDB data directory (/var/lib/mysql).
+  persistence:
+    size: 20Gi
+
+# -----------------------------------------------------------------------------
+# Persistence
+# -----------------------------------------------------------------------------
+persistence:
+  # storageClassName applies to both the filestore and MariaDB PVCs when using
+  # dynamic provisioning. Leave as "" to use the cluster's default StorageClass.
+  # Run `oc get storageclass` to see what is available on your cluster.
+  storageClassName: ""
+
+  filestore:
+    size: 10Gi
+
+
+# -----------------------------------------------------------------------------
+# Pod scheduling
+# -----------------------------------------------------------------------------
+nodeSelector: {}
+tolerations: []
+affinity: {}

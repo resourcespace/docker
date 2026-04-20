@@ -1,0 +1,37 @@
+# =============================================================================
+# OpenShift Route
+#
+# Exposes ResourceSpace via the cluster's built-in HAProxy router.
+# TLS is terminated at the edge (router); traffic inside the cluster is HTTP.
+#
+# To switch to a LoadBalancer Service later:
+#   1. Delete or disable this Route.
+#   2. Change the Service type in deployment.yaml to LoadBalancer.
+#   3. Add any cloud/on-prem load balancer annotations to the Service.
+# =============================================================================
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "resourcespace.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    {{- include "resourcespace.selectorLabels" . | nindent 4 }}
+spec:
+  host: {{ .Values.resourcespace.hostname | quote }}
+  to:
+    kind: Service
+    name: {{ include "resourcespace.fullname" . }}
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: {{ .Values.resourcespace.tls.termination }}
+    insecureEdgeTerminationPolicy: {{ .Values.resourcespace.tls.insecureEdgeTerminationPolicy }}
+    {{- if .Values.resourcespace.tls.secretName }}
+    # Custom TLS certificate loaded from a Secret.
+    # The Secret must exist in the same namespace and contain tls.crt / tls.key.
+    externalCertificate:
+      name: {{ .Values.resourcespace.tls.secretName }}
+    {{- end }}
+  wildcardPolicy: None

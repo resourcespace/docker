@@ -1,0 +1,129 @@
+# =============================================================================
+# MariaDB StatefulSet
+# =============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "resourcespace.fullname" . }}-mariadb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    {{- include "mariadb.selectorLabels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "mariadb.serviceName" . }}
+  replicas: 1   # MariaDB single-instance; change to 3+ with Galera for HA
+  selector:
+    matchLabels:
+      {{- include "mariadb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "resourcespace.labels" . | nindent 8 }}
+        {{- include "mariadb.selectorLabels" . | nindent 8 }}
+    spec:
+      # No securityContext set — OpenShift assigns a UID from the namespace
+      # range (1001020000–1001029999). MariaDB 11 runs fine as an arbitrary UID.
+      containers:
+        - name: mariadb
+          image: "{{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}"
+          imagePullPolicy: {{ .Values.mariadb.image.pullPolicy }}
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "mariadb.secretName" . }}
+          volumeMounts:
+            - name: mariadb-data
+              mountPath: /var/lib/mysql
+          resources:
+            {{- toYaml .Values.mariadb.resources | nindent 12 }}
+
+      volumes:
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: {{ include "resourcespace.fullname" . }}-mariadb-pvc
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+---
+# =============================================================================
+# MariaDB PersistentVolumeClaim
+# Declared as a standalone PVC (not a volumeClaimTemplate) so it persists
+# across StatefulSet re-creations
+# =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "resourcespace.fullname" . }}-mariadb-pvc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mariadb.persistence.size }}
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName | quote }}
+  {{- end }}
+
+---
+# =============================================================================
+# MariaDB headless Service
+# Provides stable DNS: <statefulset-pod>.<service>.<namespace>.svc.cluster.local
+# ResourceSpace connects to the ClusterIP service below, not this one.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mariadb.serviceName" . }}-headless
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    {{- include "mariadb.selectorLabels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "mariadb.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+
+---
+# =============================================================================
+# MariaDB ClusterIP Service
+# This is the hostname ResourceSpace uses: <release>-mariadb.<namespace>.svc
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mariadb.serviceName" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    {{- include "mariadb.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "mariadb.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql

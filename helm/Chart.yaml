@@ -1,0 +1,16 @@
+apiVersion: v2
+name: resourcespace
+description: >
+  Helm chart for deploying ResourceSpace (DAM) on OpenShift with
+  an in-cluster MariaDB StatefulSet
+type: application
+version: 0.1.0
+appVersion: "10.7"
+keywords:
+  - resourcespace
+  - dam
+  - media
+sources:
+  - https://github.com/resourcespace/docker
+maintainers:
+  - name: your-team
