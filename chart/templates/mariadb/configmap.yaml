@@ -1,0 +1,15 @@
+apiVersion: v1
+data:
+  MYSQL_DATABASE: resourcespace
+  MYSQL_PASSWORD: change-me
+  MYSQL_ROOT_PASSWORD: change-me
+  MYSQL_USER: resourcespace_rw
+kind: ConfigMap
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 130407091ed05d8753a6b9ecc272bb838a11d1ca
+    katenary.v3/version: master
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    katenary.v3/component: mariadb
+  name: '{{ include "resourcespace.fullname" . }}-mariadb'

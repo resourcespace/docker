@@ -1,0 +1,22 @@
+{{- if .Values.resourcespace.persistence.filestore.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 130407091ed05d8753a6b9ecc272bb838a11d1ca
+    katenary.v3/version: master
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    katenary.v3/component: resourcespace
+  name: '{{ include "resourcespace.fullname" . }}-resourcespace-filestore'
+spec:
+  accessModes:
+  {{- .Values.resourcespace.persistence.filestore.accessMode | toYaml | nindent 2 }}
+  resources:
+    requests:
+      storage: {{ tpl .Values.resourcespace.persistence.filestore.size $ }}
+  {{- if ne .Values.resourcespace.persistence.filestore.storageClass "-" }}
+  storageClassName: '{{ .Values.resourcespace.persistence.filestore.storageClass }}'
+  {{- end }}
+
+{{- end }}

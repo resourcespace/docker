@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 130407091ed05d8753a6b9ecc272bb838a11d1ca
+    katenary.v3/version: master
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    katenary.v3/component: resourcespace
+  name: '{{ include "resourcespace.fullname" . }}-resourcespace'
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    {{- include "resourcespace.selectorLabels" . | nindent 4 }}
+    katenary.v3/component: resourcespace

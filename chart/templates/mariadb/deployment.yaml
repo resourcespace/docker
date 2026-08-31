@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 130407091ed05d8753a6b9ecc272bb838a11d1ca
+    katenary.v3/version: master
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    katenary.v3/component: mariadb
+  name: '{{ include "resourcespace.fullname" . }}-mariadb'
+spec:
+  replicas: {{ .Values.mariadb.replicas }}
+  selector:
+    matchLabels:
+      {{- include "resourcespace.selectorLabels" . | nindent 6 }}
+      katenary.v3/component: mariadb
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        {{- include "resourcespace.selectorLabels" . | nindent 8 }}
+        katenary.v3/component: mariadb
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: '{{ include "resourcespace.fullname" . }}-mariadb'
+        image: '{{ tpl .Values.mariadb.repository.image $ }}:{{ tpl .Values.mariadb.repository.tag $ | default "latest" }}'
+        imagePullPolicy: {{ .Values.mariadb.imagePullPolicy }}
+        name: mariadb
+        ports:
+        - containerPort: 3306
+          name: mysql
+        {{- if .Values.mariadb.resources }}
+        resources:
+          {{ .Values.mariadb.resources | toYaml | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        {{- if .Values.mariadb.persistence.mariadb.enabled }}
+        - mountPath: /var/lib/mysql
+          name: mariadb
+        {{- end }}
+      {{- if .Values.pullSecrets }}
+      imagePullSecrets:
+      {{- .Values.pullSecrets | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.mariadb.nodeSelector }}
+      nodeSelector:
+        {{- .Values.mariadb.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if ne .Values.mariadb.serviceAccount "" }}
+      serviceAccountName: {{ .Values.mariadb.serviceAccount | quote }}
+      {{- end }}
+      volumes:
+      {{- if .Values.mariadb.persistence.mariadb.enabled }}
+      - name: mariadb
+        persistentVolumeClaim:
+          claimName: '{{ include "resourcespace.fullname" . }}-mariadb-mariadb'
+      {{- end }}

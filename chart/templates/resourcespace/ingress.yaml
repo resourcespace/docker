@@ -1,0 +1,39 @@
+{{- if .Values.resourcespace.ingress.enabled -}}
+{{- $fullname := include "resourcespace.fullname" . -}}
+{{- $tlsname := printf "%s-%s-tls" $fullname "resourcespace" -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    katenary.v3/compose-hash: 130407091ed05d8753a6b9ecc272bb838a11d1ca
+    katenary.v3/version: master
+    {{- if .Values.resourcespace.ingress.annotations -}}
+        {{- toYaml .Values.resourcespace.ingress.annotations | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "resourcespace.labels" . | nindent 4 }}
+    katenary.v3/component: resourcespace
+  name: '{{ $fullname }}-resourcespace'
+spec:
+  {{- if ne .Values.resourcespace.ingress.class "-" }}
+  ingressClassName: '{{ tpl .Values.resourcespace.ingress.class $ }}'
+  {{- end }}
+  rules:
+  - host: '{{ tpl .Values.resourcespace.ingress.host $ }}'
+    http:
+      paths:
+      - backend:
+          service:
+            name: '{{ $fullname }}-resourcespace'
+            port:
+              name: http
+        path: '{{ tpl .Values.resourcespace.ingress.path $ }}'
+        pathType: ImplementationSpecific
+  {{- if .Values.resourcespace.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    - '{{ tpl .Values.resourcespace.ingress.host . }}'
+    secretName: '{{ .Values.resourcespace.ingress.tls.secretName | default $tlsname }}'
+  {{ end -}}
+
+{{- end -}}

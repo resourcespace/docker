@@ -1,0 +1,18 @@
+# This is the main values.yaml file for the resourcespace chart.
+# More information can be found in the chart's README.md file.
+#
+# generated at: 2025-11-26T10:32:40-06:00
+# compose files: docker-compose.yaml
+# compose hash (sha1): 130407091ed05d8753a6b9ecc272bb838a11d1ca
+
+# Name of the chart (required), basically the name of the project.
+name: resourcespace
+apiVersion: v2
+
+# Version of the chart (required)
+version: 0.1.5
+
+# Version of the application (required).
+# This should be the main application version.
+appVersion: 0.1.5
+description: A Helm chart for resourcespace
